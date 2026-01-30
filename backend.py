@@ -1,9 +1,10 @@
 # backend.py
 import logging  # <--- [新增] 用于调用 logging.info
-import logger   # <--- [新增] 引入配置模块，确保日志生效
+import logger  # <--- [新增] 引入配置模块，确保日志生效
 from openai import OpenAI
 from typing import Generator, List, Dict
 import config
+
 
 class AIWriter:
     """
@@ -23,15 +24,17 @@ class AIWriter:
         生成流式回复
         """
         # <--- [新增] 记录每次调用的参数，方便后续分析用户喜欢什么样的参数
-        logging.info(f"开始生成任务: temp={temperature}, tokens={max_tokens}, msg_count={len(messages)}")
-        
+        logging.info(
+            f"开始生成任务: temp={temperature}, tokens={max_tokens}, msg_count={len(messages)}"
+        )
+
         try:
             stream = self.client.chat.completions.create(
                 model=config.MODEL_NAME,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                stream=True, 
+                stream=True,
             )
 
             for chunk in stream:
