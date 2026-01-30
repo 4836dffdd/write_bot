@@ -1,26 +1,9 @@
-import logging
-from logging.handlers import RotatingFileHandler
-
-# 配置日志
-logging.basicConfig(
-    handlers=[
-        # 循环覆盖：最多存 5 个文件，每个文件最大 1MB
-        RotatingFileHandler("app.log", maxBytes=1024 * 1024, backupCount=5),
-        logging.StreamHandler(),  # 同时输出到控制台
-    ],
-    level=logging.INFO,  # 只记录 INFO 以上的信息
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-
-# 以后不要用 print("..."), 改用:
-logging.info("用户发送了一条消息")
-logging.error("API 连接失败")
-
 # backend.py
+import logging  # <--- [新增] 用于调用 logging.info
+import logger   # <--- [新增] 引入配置模块，确保日志生效
 from openai import OpenAI
 from typing import Generator, List, Dict
-import config  # 导入配置
-
+import config
 
 class AIWriter:
     """
@@ -29,7 +12,8 @@ class AIWriter:
     """
 
     def __init__(self):
-        # 初始化客户端 (只做一次)
+        # <--- [新增] 记录初始化动作
+        logging.info("正在初始化 AIWriter Client...")
         self.client = OpenAI(api_key=config.API_KEY, base_url=config.BASE_URL)
 
     def generate_stream(
@@ -37,23 +21,27 @@ class AIWriter:
     ) -> Generator[str, None, None]:
         """
         生成流式回复
-        :param messages: 完整的对话历史 [{"role": "user", "content": "..."}]
-        :param temperature: 活跃度 (UI 传进来的)
-        :param max_tokens: 最大长度 (UI 传进来的)
-        :return: 生成器，每次吐出一个字符片段
         """
+        # <--- [新增] 记录每次调用的参数，方便后续分析用户喜欢什么样的参数
+        logging.info(f"开始生成任务: temp={temperature}, tokens={max_tokens}, msg_count={len(messages)}")
+        
         try:
             stream = self.client.chat.completions.create(
                 model=config.MODEL_NAME,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                stream=True,  # 强制开启流式
+                stream=True, 
             )
 
             for chunk in stream:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
 
+            # <--- [新增] 可以在这里记录生成完成（可选）
+            # logging.info("生成任务完成")
+
         except Exception as e:
+            # <--- [新增] 关键！记录报错堆栈，以后 VPS 只要红了就看这里
+            logging.error(f"AI 连接或生成失败: {str(e)}")
             yield f"\n[系统错误] AI 连接失败: {str(e)}"
