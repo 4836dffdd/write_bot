@@ -35,7 +35,7 @@ with st.sidebar:
     # 变量 2: 模型参数
     temperature = st.slider(
         "🌡️ 思维发散度 (Temperature)",
-        min_value=0.0, max_value=1,
+        min_value=0.0, max_value=1.0,
         value=config.DEFAULT_TEMP, step=0.1
     )
     
