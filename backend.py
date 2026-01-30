@@ -1,25 +1,39 @@
+import logging
+from logging.handlers import RotatingFileHandler
+
+# 配置日志
+logging.basicConfig(
+    handlers=[
+        # 循环覆盖：最多存 5 个文件，每个文件最大 1MB
+        RotatingFileHandler("app.log", maxBytes=1024 * 1024, backupCount=5),
+        logging.StreamHandler(),  # 同时输出到控制台
+    ],
+    level=logging.INFO,  # 只记录 INFO 以上的信息
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+# 以后不要用 print("..."), 改用:
+logging.info("用户发送了一条消息")
+logging.error("API 连接失败")
+
 # backend.py
 from openai import OpenAI
 from typing import Generator, List, Dict
 import config  # 导入配置
+
 
 class AIWriter:
     """
     AI 核心逻辑类
     负责与 LLM 进行通信，不处理任何 UI 逻辑。
     """
+
     def __init__(self):
         # 初始化客户端 (只做一次)
-        self.client = OpenAI(
-            api_key=config.API_KEY,
-            base_url=config.BASE_URL
-        )
+        self.client = OpenAI(api_key=config.API_KEY, base_url=config.BASE_URL)
 
     def generate_stream(
-        self, 
-        messages: List[Dict[str, str]], 
-        temperature: float, 
-        max_tokens: int
+        self, messages: List[Dict[str, str]], temperature: float, max_tokens: int
     ) -> Generator[str, None, None]:
         """
         生成流式回复
@@ -36,10 +50,10 @@ class AIWriter:
                 max_tokens=max_tokens,
                 stream=True,  # 强制开启流式
             )
-            
+
             for chunk in stream:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
-                    
+
         except Exception as e:
             yield f"\n[系统错误] AI 连接失败: {str(e)}"
